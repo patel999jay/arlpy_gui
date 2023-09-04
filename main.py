@@ -11,12 +11,14 @@
 # bokeh serve --show main.py
 
 from bokeh.layouts import column, row
-from bokeh.models import TextInput, PreText, TextAreaInput
+from bokeh.models import TextInput, PreText, TextAreaInput, CheckboxGroup, CustomJS
 from bokeh.plotting import curdoc, figure
 import arlpy.uwapm as pm
 import arlpy.plot as plt
 from bokeh.models import Select
 from bokeh.themes import Theme, built_in_themes
+import json
+import numpy as np
 
 class BellhopSimulation:
     def __init__(self):
@@ -26,7 +28,7 @@ class BellhopSimulation:
             'bottom_density': 1600,
             'bottom_roughness': 0,
             'bottom_soundspeed': 1600,
-            'depth': 25,
+            'depth': 30,
             'depth_interp': 'linear',
             'frequency': 25000,
             'max_angle': 80,
@@ -43,6 +45,13 @@ class BellhopSimulation:
         }
         self.command_output = PreText(text="Command output:", width=400, height=200)
         self.command_input = TextAreaInput(title="Enter command:", rows=5, width=400)
+        self.last_command_output = None
+
+    def add_to_command_output(self, text):
+        # self.command_output.text += "\n" + text
+        if text != self.last_command_output:
+            self.command_output.text += "\n" + text
+            self.last_command_output = text
 
     def create_widgets(self):
         self.widgets = {}
@@ -116,34 +125,65 @@ class BellhopSimulation:
         s.title.align = "center"
         s.title.text_color = "black"
 
+        #Plot the SSP
+        t = plt.figure(title=env_params['name'] + ' SSP', xlabel="soundspeed (m/s)", ylabel="depth (m)",  width=600, height=350)
+        plt.hold(True)
+        pm.plot_ssp(env)
+        t = plt.gcf()
+        t.title.align = "center"
+        t.title.text_color = "black"
+
         # print("Env : ", type(env_params))
-        return p, q, r, s
+        bellhop.add_to_command_output(f"simulation run with default values.")
+
+        return p, q, r, s, t
 
 bellhop = BellhopSimulation()
 
+
 # Update function for the Bokeh widgets
 def update(attr, old, new):
+
     for key, widget in bellhop.widgets.items():
         if isinstance(widget, TextInput):
             value = widget.value
             # Convert value to the appropriate data type
             if value == 'None':
                 bellhop.params[key] = None
+            elif key in ['soundspeed', 'depth']:
+                try:
+                    bellhop.params[key] = json.loads(value)
+                except json.JSONDecodeError:
+                    bellhop.add_to_command_output(f"Invalid JSON entered for {key}.")
+                    print(f"Invalid JSON entered for {key}.")
+                continue   
             elif key in ['name', 'depth_interp', 'soundspeed_interp', 'surface_interp', 'tx_directionality', 'type']:
                 bellhop.params[key] = value
+            elif key == 'rx_range':
+                bellhop.params[key] = float(value)
+            elif key == 'rx_depth':
+                bellhop.params[key] = float(value)    
             else:
                 bellhop.params[key] = float(value)
-    p, q, r, s = bellhop.runSimulation()
+    # try:
+    #     bellhop.params[key] = json.loads(value)
+    # except json.JSONDecodeError:
+    #     bellhop.add_to_command_output(f"Invalid JSON entered for {key}.")
+    #     print(f"Invalid JSON entered for {key}.")
+
+    p, q, r, s, t = bellhop.runSimulation()
+    bellhop.add_to_command_output(f"simulation updated.")
+
     # layout.children[1] = p
     layout.children[1].children[0] = p
-    layout.children[1].children[1] = q  # Update the second plo
+    layout.children[1].children[1] = q  # Update the second plot
     layout.children[1].children[2] = r  # Update the third plot
-    layout.children[2].children[0] = s  # Update the forth plot
-
+    layout.children[2].children[0] = t  # Update the forth plot
+    layout.children[2].children[1] = s  # Update the fifth plot
 
 # Create the Bokeh plot
 # p = bellhop.runSimulation()
-p, q, r, s = bellhop.runSimulation()
+p, q, r, s, t = bellhop.runSimulation()
 
 bellhop.create_widgets()
 
@@ -165,7 +205,7 @@ controls = column(*control_widgets, width=250)
 # layout = row(controls, p, theme_select)
 # layout = row(controls, p)
 # layout = column(row(controls, column(p, q, r)), row(s,s,s)) # need to change this.
-layout = row(controls, column(p, q, r), column(s))
+layout = row(controls, column(p, q, r), column(t, s), column(bellhop.command_output)) # checkbox_group
 
 # Add the layout to the current document
 # curdoc().theme = './theme.yaml'
