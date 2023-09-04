@@ -1,6 +1,18 @@
+# MIT License
+
+# Copyright (c) 2023 Jay Patel
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+# bokeh serve --show main.py
+
 from bokeh.layouts import column, row
 from bokeh.models import TextInput, PreText, TextAreaInput
-from bokeh.plotting import curdoc
+from bokeh.plotting import curdoc, figure
 import arlpy.uwapm as pm
 import arlpy.plot as plt
 from bokeh.models import Select
@@ -73,15 +85,39 @@ class BellhopSimulation:
         # Replace the following code with your Bellhop simulation code and plot generation
         env = pm.create_env2d(**env_params)
 
-        p = plt.figure(title=env_params['name'], width=600, height=350)
+        p = plt.figure(title=env_params['name'] + ' env', xlabel="depth (m)", ylabel="range (m)", width=600, height=350)
         plt.hold(True)
         pm.plot_env(env)
         p = plt.gcf()
+        p.title.align = "center"
+        p.title.text_color = "black"
 
-        
+        # Compute and plot rays
+        rays = pm.compute_eigenrays(env)
+        q = plt.figure(title=env_params['name'] + ' eigen rays', xlabel="depth (m)", ylabel="range (m)", width=600, height=350)
+        pm.plot_rays(rays, env=env, width=900)
+        q = plt.gcf()
+        q.title.align = "center"
+        q.title.text_color = "black"
+
+        # Compute Arrivals
+        arrivals = pm.compute_arrivals(env)
+        r = plt.figure(title=env_params['name'] + ' arrivals', xlabel="amplitude", ylabel="arrival time (s)", width=600, height=350)
+        pm.plot_arrivals(arrivals, width=900)
+        r = plt.gcf()
+        r.title.align = "center"
+        r.title.text_color = "black"
+
+        # Compute and plot rays
+        rays = pm.compute_rays(env)
+        s = plt.figure(title=env_params['name'] + ' rays', xlabel="depth (m)", ylabel="range (m)", width=600, height=350)
+        pm.plot_rays(rays, env=env, width=600)
+        s = plt.gcf()
+        s.title.align = "center"
+        s.title.text_color = "black"
 
         # print("Env : ", type(env_params))
-        return p
+        return p, q, r, s
 
 bellhop = BellhopSimulation()
 
@@ -97,12 +133,17 @@ def update(attr, old, new):
                 bellhop.params[key] = value
             else:
                 bellhop.params[key] = float(value)
-    p = bellhop.runSimulation()
-    layout.children[1] = p
+    p, q, r, s = bellhop.runSimulation()
+    # layout.children[1] = p
+    layout.children[1].children[0] = p
+    layout.children[1].children[1] = q  # Update the second plo
+    layout.children[1].children[2] = r  # Update the third plot
+    layout.children[2].children[0] = s  # Update the forth plot
 
 
 # Create the Bokeh plot
-p = bellhop.runSimulation()
+# p = bellhop.runSimulation()
+p, q, r, s = bellhop.runSimulation()
 
 bellhop.create_widgets()
 
@@ -122,8 +163,9 @@ theme_select.on_change('value', switch_theme)
 control_widgets = [widget for widget in bellhop.widgets.values()]
 controls = column(*control_widgets, width=250)
 # layout = row(controls, p, theme_select)
-layout = row(controls, p)
-
+# layout = row(controls, p)
+# layout = column(row(controls, column(p, q, r)), row(s,s,s)) # need to change this.
+layout = row(controls, column(p, q, r), column(s))
 
 # Add the layout to the current document
 # curdoc().theme = './theme.yaml'
