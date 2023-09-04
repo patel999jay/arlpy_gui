@@ -29,6 +29,11 @@ It is initially assigned the default values from `create_env2d()` function from 
 ```
 currently only params - `soundspeed`,`depth` takes list as input.
 
+- To run this python bokeh application, use below command :
+  ```bash
+  bokeh serve --show main.py
+  ```
+
 ### Screenshot:
 ![arlpy_gui](https://github.com/patel999jay/arlpy_gui/assets/5512610/38875016-fcac-48ac-9a61-70b23f0fb26e)
 
