@@ -28,6 +28,12 @@ It is initially assigned the default values from `create_env2d()` function from 
         }
 ```
 currently only params - `soundspeed`,`depth` takes list as input.
+```bash
+# currently use this for testing, refer screenshot below for more details.
+depth = [[0, 30],     [300, 20],   [2000, 25]]
+soundspeed =  [[ 0, 1540], [10, 1530], [20, 1532], [25, 1533], [30, 1535] ]
+```
+
 
 - To run this python bokeh application, use below command :
   ```bash
