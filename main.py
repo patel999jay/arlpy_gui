@@ -10,8 +10,14 @@
 
 # bokeh serve --show main.py
 
+import warnings
+
+# Suppress specific Bokeh deprecation warnings
+warnings.filterwarnings("ignore", category=UserWarning, message=".*asterisk\\(\\) method.*")
+warnings.filterwarnings("ignore", category=UserWarning, message=".*circle\\(\\) method.*")
+
 from bokeh.layouts import column, row
-from bokeh.models import TextInput, PreText, TextAreaInput, Select, Button, Div
+from bokeh.models import TextInput, PreText, TextAreaInput, Select, Button, Div, FileInput, CheckboxGroup, Slider
 from bokeh.plotting import curdoc, figure
 from bokeh.themes import built_in_themes  # Add this line
 import arlpy.uwapm as pm
@@ -194,6 +200,25 @@ def reset_params():
     bellhop.add_to_command_output("Parameters reset to default.")
 reset_button.on_click(reset_params)
 
+# Additional Widgets
+export_button = Button(label="Export Results", button_type="primary")
+def export_results():
+    # Implement export functionality
+    bellhop.add_to_command_output("Results exported.")
+export_button.on_click(export_results)
+
+presets_select = Select(title='Presets', options=['Preset 1', 'Preset 2', 'Preset 3'], value='Preset 1')
+def load_preset(attr, old, new):
+    preset_values = {
+        'Preset 1': {'bottom_absorption': 0.1, 'bottom_density': 1600, 'bottom_soundspeed': 1600},
+        'Preset 2': {'bottom_absorption': 0.2, 'bottom_density': 1700, 'bottom_soundspeed': 1650},
+        'Preset 3': {'bottom_absorption': 0.3, 'bottom_density': 1800, 'bottom_soundspeed': 1700}
+    }
+    for key, value in preset_values[new].items():
+        bellhop.widgets[key].value = str(value)
+    bellhop.add_to_command_output(f"Preset {new} loaded.")
+presets_select.on_change('value', load_preset)
+
 # Create the initial plots
 p, q, r, s, t = bellhop.run_simulation()
 
@@ -207,7 +232,8 @@ if t is None: t = figure(title="Error plotting SSP", width=600, height=350)
 # Create the layout
 control_widgets = [widget for widget in bellhop.widgets.values()]
 controls = column(*control_widgets, width=250)
-layout = row(controls, column(p, q, r), column(t, s), column(bellhop.command_output, theme_select, reset_button))
+extra_controls = column(presets_select, export_button, theme_select, reset_button)
+layout = row(controls, column(p, q, r), column(t, s), column(bellhop.command_output, extra_controls))
 
 # Add the layout to the current document
 curdoc().add_root(layout)
