@@ -11,12 +11,11 @@
 # bokeh serve --show main.py
 
 from bokeh.layouts import column, row
-from bokeh.models import TextInput, PreText, TextAreaInput, CheckboxGroup, CustomJS
+from bokeh.models import TextInput, PreText, TextAreaInput, Select, Button, Div
 from bokeh.plotting import curdoc, figure
+from bokeh.themes import built_in_themes  # Add this line
 import arlpy.uwapm as pm
 import arlpy.plot as plt
-from bokeh.models import Select
-from bokeh.themes import Theme, built_in_themes
 import json
 import numpy as np
 
@@ -48,7 +47,6 @@ class BellhopSimulation:
         self.last_command_output = None
 
     def add_to_command_output(self, text):
-        # self.command_output.text += "\n" + text
         if text != self.last_command_output:
             self.command_output.text += "\n" + text
             self.last_command_output = text
@@ -69,121 +67,113 @@ class BellhopSimulation:
                 params[key] = widget.value
         return params    
 
-    def runSimulation(self):
+    def run_simulation(self):
         env_params = {}
-        env_params['name'] = self.params['name']
-        env_params['bottom_absorption'] = self.params['bottom_absorption']
-        env_params['bottom_density'] = self.params['bottom_density']
-        env_params['bottom_roughness'] = self.params['bottom_roughness']
-        env_params['bottom_soundspeed'] = self.params['bottom_soundspeed']
-        env_params['depth'] = self.params['depth']
-        env_params['depth_interp'] = self.params['depth_interp']
-        env_params['frequency'] = self.params['frequency']
-        env_params['max_angle'] = self.params['max_angle']
-        env_params['min_angle'] = self.params['min_angle']
-        env_params['rx_depth'] = self.params['rx_depth']
-        env_params['rx_range'] = self.params['rx_range']
-        env_params['soundspeed'] = self.params['soundspeed']
-        env_params['soundspeed_interp'] = self.params['soundspeed_interp']
-        env_params['surface'] = self.params['surface']
-        env_params['surface_interp'] = self.params['surface_interp']
-        env_params['tx_depth'] = self.params['tx_depth']
-        env_params['tx_directionality'] = self.params['tx_directionality']
+        for key, val in self.params.items():
+            if val == 'None' or val is None:
+                env_params[key] = None
+            elif key not in ['name', 'depth_interp', 'soundspeed_interp', 'surface_interp', 'tx_directionality', 'type']:
+                env_params[key] = float(val)
+            else:
+                env_params[key] = val
+
+        # Debugging: Print the environment parameters
+        print("Environment parameters:", env_params)
 
         # Run simulation and generate plot using your Bellhop code
-        # Replace the following code with your Bellhop simulation code and plot generation
-        env = pm.create_env2d(**env_params)
+        try:
+            env = pm.create_env2d(**env_params)
+        except Exception as e:
+            self.add_to_command_output(f"Error creating environment: {e}")
+            return None, None, None, None, None
 
-        p = plt.figure(title=env_params['name'] + ' env', xlabel="depth (m)", ylabel="range (m)", width=600, height=350)
-        plt.hold(True)
-        pm.plot_env(env)
-        p = plt.gcf()
-        p.title.align = "center"
-        p.title.text_color = "black"
+        try:
+            p = plt.figure(title=env_params['name'] + ' env', xlabel="depth (m)", ylabel="range (m)", width=600, height=350)
+            plt.hold(True)
+            pm.plot_env(env)
+            p = plt.gcf()
+            p.title.align = "center"
+            p.title.text_color = "black"
+        except Exception as e:
+            self.add_to_command_output(f"Error plotting environment: {e}")
+            p = figure(title="Error plotting environment", width=600, height=350)
 
-        # Compute and plot rays
-        rays = pm.compute_eigenrays(env)
-        q = plt.figure(title=env_params['name'] + ' eigen rays', xlabel="depth (m)", ylabel="range (m)", width=600, height=350)
-        pm.plot_rays(rays, env=env, width=900)
-        q = plt.gcf()
-        q.title.align = "center"
-        q.title.text_color = "black"
+        try:
+            rays = pm.compute_eigenrays(env)
+            q = plt.figure(title=env_params['name'] + ' eigen rays', xlabel="depth (m)", ylabel="range (m)", width=600, height=350)
+            pm.plot_rays(rays, env=env, width=900)
+            q = plt.gcf()
+            q.title.align = "center"
+            q.title.text_color = "black"
+        except Exception as e:
+            self.add_to_command_output(f"Error computing or plotting eigenrays: {e}")
+            q = figure(title="Error plotting eigen rays", width=600, height=350)
 
-        # Compute Arrivals
-        arrivals = pm.compute_arrivals(env)
-        r = plt.figure(title=env_params['name'] + ' arrivals', xlabel="amplitude", ylabel="arrival time (s)", width=600, height=350)
-        pm.plot_arrivals(arrivals, width=900)
-        r = plt.gcf()
-        r.title.align = "center"
-        r.title.text_color = "black"
+        try:
+            arrivals = pm.compute_arrivals(env)
+            r = plt.figure(title=env_params['name'] + ' arrivals', xlabel="amplitude", ylabel="arrival time (s)", width=600, height=350)
+            pm.plot_arrivals(arrivals, width=900)
+            r = plt.gcf()
+            r.title.align = "center"
+            r.title.text_color = "black"
+        except Exception as e:
+            self.add_to_command_output(f"Error computing or plotting arrivals: {e}")
+            r = figure(title="Error plotting arrivals", width=600, height=350)
 
-        # Compute and plot rays
-        rays = pm.compute_rays(env)
-        s = plt.figure(title=env_params['name'] + ' rays', xlabel="depth (m)", ylabel="range (m)", width=600, height=350)
-        pm.plot_rays(rays, env=env, width=600)
-        s = plt.gcf()
-        s.title.align = "center"
-        s.title.text_color = "black"
+        try:
+            rays = pm.compute_rays(env)
+            s = plt.figure(title=env_params['name'] + ' rays', xlabel="depth (m)", ylabel="range (m)", width=600, height=350)
+            pm.plot_rays(rays, env=env, width=600)
+            s = plt.gcf()
+            s.title.align = "center"
+            s.title.text_color = "black"
+        except Exception as e:
+            self.add_to_command_output(f"Error computing or plotting rays: {e}")
+            s = figure(title="Error plotting rays", width=600, height=350)
 
-        #Plot the SSP
-        t = plt.figure(title=env_params['name'] + ' SSP', xlabel="soundspeed (m/s)", ylabel="depth (m)",  width=600, height=350)
-        plt.hold(True)
-        pm.plot_ssp(env)
-        t = plt.gcf()
-        t.title.align = "center"
-        t.title.text_color = "black"
+        try:
+            t = plt.figure(title=env_params['name'] + ' SSP', xlabel="soundspeed (m/s)", ylabel="depth (m)",  width=600, height=350)
+            plt.hold(True)
+            pm.plot_ssp(env)
+            t = plt.gcf()
+            t.title.align = "center"
+            t.title.text_color = "black"
+        except Exception as e:
+            self.add_to_command_output(f"Error plotting SSP: {e}")
+            t = figure(title="Error plotting SSP", width=600, height=350)
 
-        # print("Env : ", type(env_params))
-        bellhop.add_to_command_output(f"simulation run with default values.")
+        self.add_to_command_output("Simulation run with updated values.")
 
         return p, q, r, s, t
 
 bellhop = BellhopSimulation()
 
-
 # Update function for the Bokeh widgets
 def update(attr, old, new):
-
     for key, widget in bellhop.widgets.items():
-        if isinstance(widget, TextInput):
-            value = widget.value
-            # Convert value to the appropriate data type
-            if value == 'None':
-                bellhop.params[key] = None
-            elif key in ['soundspeed', 'depth']:
-                try:
-                    bellhop.params[key] = json.loads(value)
-                except json.JSONDecodeError:
-                    bellhop.add_to_command_output(f"Invalid JSON entered for {key}.")
-                    print(f"Invalid JSON entered for {key}.")
-                continue   
-            elif key in ['name', 'depth_interp', 'soundspeed_interp', 'surface_interp', 'tx_directionality', 'type']:
-                bellhop.params[key] = value
-            elif key == 'rx_range':
-                bellhop.params[key] = float(value)
-            elif key == 'rx_depth':
-                bellhop.params[key] = float(value)    
-            else:
-                bellhop.params[key] = float(value)
-    # try:
-    #     bellhop.params[key] = json.loads(value)
-    # except json.JSONDecodeError:
-    #     bellhop.add_to_command_output(f"Invalid JSON entered for {key}.")
-    #     print(f"Invalid JSON entered for {key}.")
+        value = widget.value
+        if value == 'None':
+            bellhop.params[key] = None
+        elif key in ['soundspeed', 'depth']:
+            try:
+                bellhop.params[key] = json.loads(value)
+            except json.JSONDecodeError:
+                bellhop.add_to_command_output(f"Invalid JSON entered for {key}.")
+                print(f"Invalid JSON entered for {key}.")
+            continue   
+        elif key in ['name', 'depth_interp', 'soundspeed_interp', 'surface_interp', 'tx_directionality', 'type']:
+            bellhop.params[key] = value
+        else:
+            bellhop.params[key] = float(value)
 
-    p, q, r, s, t = bellhop.runSimulation()
-    bellhop.add_to_command_output(f"simulation updated.")
+    p, q, r, s, t = bellhop.run_simulation()
+    bellhop.add_to_command_output("Simulation updated.")
 
-    # layout.children[1] = p
     layout.children[1].children[0] = p
-    layout.children[1].children[1] = q  # Update the second plot
-    layout.children[1].children[2] = r  # Update the third plot
-    layout.children[2].children[0] = t  # Update the forth plot
-    layout.children[2].children[1] = s  # Update the fifth plot
-
-# Create the Bokeh plot
-# p = bellhop.runSimulation()
-p, q, r, s, t = bellhop.runSimulation()
+    layout.children[1].children[1] = q
+    layout.children[1].children[2] = r
+    layout.children[2].children[0] = t
+    layout.children[2].children[1] = s
 
 bellhop.create_widgets()
 
@@ -191,23 +181,34 @@ bellhop.create_widgets()
 for widget in bellhop.widgets.values():
     widget.on_change('value', update)
 
-def switch_theme(value, old, new):
+def switch_theme(attr, old, new):
     curdoc().theme = new
 
-theme_select = Select(title='Theme', options=['caliber',
-                                              'dark_minimal', 
-                                              'light_minimal'])
+theme_select = Select(title='Theme', options=list(built_in_themes), value='light_minimal')
 theme_select.on_change('value', switch_theme)    
+
+reset_button = Button(label="Reset to Default", button_type="success")
+def reset_params():
+    for key, widget in bellhop.widgets.items():
+        widget.value = str(bellhop.params[key])
+    bellhop.add_to_command_output("Parameters reset to default.")
+reset_button.on_click(reset_params)
+
+# Create the initial plots
+p, q, r, s, t = bellhop.run_simulation()
+
+# Ensure all plots are valid Bokeh figure objects
+if p is None: p = figure(title="Error plotting environment", width=600, height=350)
+if q is None: q = figure(title="Error plotting eigen rays", width=600, height=350)
+if r is None: r = figure(title="Error plotting arrivals", width=600, height=350)
+if s is None: s = figure(title="Error plotting rays", width=600, height=350)
+if t is None: t = figure(title="Error plotting SSP", width=600, height=350)
 
 # Create the layout
 control_widgets = [widget for widget in bellhop.widgets.values()]
 controls = column(*control_widgets, width=250)
-# layout = row(controls, p, theme_select)
-# layout = row(controls, p)
-# layout = column(row(controls, column(p, q, r)), row(s,s,s)) # need to change this.
-layout = row(controls, column(p, q, r), column(t, s), column(bellhop.command_output)) # checkbox_group
+layout = row(controls, column(p, q, r), column(t, s), column(bellhop.command_output, theme_select, reset_button))
 
 # Add the layout to the current document
-# curdoc().theme = './theme.yaml'
 curdoc().add_root(layout)
 curdoc().title = "Bellhop Simulation"
