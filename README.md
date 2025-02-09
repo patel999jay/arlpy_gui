@@ -1,8 +1,9 @@
 # arlpy_gui
 
-This is just a tool that can quickly plot the underwater enviornment from user inputs using [arlpy](https://github.com/org-arl/arlpy).
+## Overview
+This tool provides a quick way to visualize the underwater acoustic environment based on user inputs using [arlpy](https://github.com/org-arl/arlpy).
 
-It is initially assigned the default values from `create_env2d()` function from [arlpy](https://github.com/org-arl/arlpy).
+The default values are initialized from the `create_env2d()` function of [arlpy](https://github.com/org-arl/arlpy):
 
 ```python
         self.params = {
@@ -27,18 +28,46 @@ It is initially assigned the default values from `create_env2d()` function from 
             'type': '2D'
         }
 ```
-currently only params - `soundspeed`,`depth` takes list as input.
-```bash
-# currently use this for testing, refer screenshot below for more details.
-depth = [[0, 30],     [300, 20],   [2000, 25]]
-soundspeed =  [[ 0, 1540], [10, 1530], [20, 1532], [25, 1533], [30, 1535] ]
+
+## Installation and Usage
+To run this **Bokeh** application, use the following command:
+  ```bash
+  bokeh serve --show main.py --websocket-max-message-size 104857600
+  ```
+## Parameter Configuration
+### Supported List Inputs
+Currently, the following parameters accept **list inputs**:
+- `soundspeed`
+- `depth`
+
+Use the format below when specifying lists:
+
+```python
+# Example list inputs
+
+# Depth profile: [range, depth]
+depth = [
+    [0, 30],  # At range 0m, depth is 30m
+    [300, 20],  # At range 300m, depth is 20m
+    [1000, 25]  # At range 1000m, depth is 25m
+]
+
+# Sound speed profile: [depth, sound speed]
+soundspeed = [
+    [0, 1540],   # At depth 0m, sound speed is 1540 m/s
+    [10, 1530],  # At depth 10m, sound speed is 1530 m/s
+    [20, 1532],  # At depth 20m, sound speed is 1532 m/s
+    [25, 1533],  # At depth 25m, sound speed is 1533 m/s
+    [30, 1535]   # At depth 30m, sound speed is 1535 m/s
+]
 ```
 
-
-- To run this python bokeh application, use below command :
-  ```bash
-  bokeh serve --show main.py
-  ```
+### Example Command for Running with Lists
+If testing with list inputs, ensure they are formatted correctly:
+```bash
+# Example: Run simulation with custom depth and sound speed profiles
+bokeh serve --show main.py --websocket-max-message-size 104857600
+```
 
 ### Screenshot:
 ![arlpy_gui](https://github.com/patel999jay/arlpy_gui/assets/5512610/38875016-fcac-48ac-9a61-70b23f0fb26e)
@@ -47,3 +76,5 @@ Useful links
 ------------
 1. [arlpy home](https://github.com/org-arl/arlpy)
 2. [arlpy documentation](http://arlpy.readthedocs.io)
+---
+This project is licensed under the **MIT License**.
