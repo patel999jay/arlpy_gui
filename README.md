@@ -33,11 +33,39 @@ The default values are initialized from the `create_env2d()` function of [arlpy]
 ```
 
 ## Installation and Usage
+
+
+## Installation and Usage
+
+### Requirements
+
+* **Python 3.12+**
+* See `requirements.txt` for required Python packages
+
+### Install dependencies
+
+You can install the required packages using:
+
+```bash
+pip install -r requirements.txt
+```
+
+Alternatively, if you're using **Anaconda/Miniconda**, create a virtual environment:
+
+```bash
+conda create -n arlpy_gui_env python=3.12
+conda activate arlpy_gui_env
+pip install -r requirements.txt
+```
+
+### Run the Bokeh App
+
 To run this **Bokeh** application, use the following command:
   ```bash
   bokeh serve --show main.py --websocket-max-message-size 104857600
   ```
 ## Parameter Configuration
+
 ### Supported List Inputs
 Currently, the following parameters accept **list inputs**:
 - `soundspeed`
@@ -48,14 +76,14 @@ Use the format below when specifying lists:
 ```python
 # Example list inputs
 
-# Depth profile: [range, depth]
+# Depth profile: [range, depth] - [[0, 30],[300, 20],[1000, 25]]
 depth = [
     [0, 30],  # At range 0m, depth is 30m
     [300, 20],  # At range 300m, depth is 20m
     [1000, 25]  # At range 1000m, depth is 25m
 ]
 
-# Sound speed profile: [depth, sound speed]
+# Sound speed profile: [depth, sound speed] - [[0, 1540], [10, 1530],  [20, 1532], [25, 1533], [30, 1535]]
 soundspeed = [
     [0, 1540],   # At depth 0m, sound speed is 1540 m/s
     [10, 1530],  # At depth 10m, sound speed is 1530 m/s
@@ -66,7 +94,9 @@ soundspeed = [
 ```
 
 ### Example Command for Running with Lists
+
 If testing with list inputs, ensure they are formatted correctly:
+
 ```bash
 # Example: Run simulation with custom depth and sound speed profiles
 bokeh serve --show main.py --websocket-max-message-size 104857600
