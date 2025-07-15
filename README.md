@@ -70,7 +70,8 @@ To run this **Bokeh** application, use the following command:
 Currently, the following parameters accept **list inputs**:
 - `soundspeed`
 - `depth`
-
+- `surface`
+ 
 Use the format below when specifying lists:
 
 ```python
@@ -91,6 +92,8 @@ soundspeed = [
     [25, 1533],  # At depth 25m, sound speed is 1533 m/s
     [30, 1535]   # At depth 30m, sound speed is 1535 m/s
 ]
+
+surface = np.array([[r, 0.5+0.5*np.sin(2*np.pi*0.005*r)] for r in np.linspace(0,1000,1001)])
 ```
 
 ### Example Command for Running with Lists
