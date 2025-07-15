@@ -102,8 +102,11 @@ If testing with list inputs, ensure they are formatted correctly:
 bokeh serve --show main.py --websocket-max-message-size 104857600
 ```
 
-### Screenshot:
+### Screenshots:
 ![arlpy_gui](https://github.com/patel999jay/arlpy_gui/assets/5512610/38875016-fcac-48ac-9a61-70b23f0fb26e)
+
+---------------------
+![arlpy_gui_with_surface](https://github.com/user-attachments/assets/a36dea65-0b79-4baf-b7af-c4110595121c)
 
 Useful links
 ------------
