@@ -20,12 +20,16 @@ from bokeh.layouts import column, row
 from bokeh.models import TextInput, PreText, TextAreaInput, Select, Button, Div
 from bokeh.plotting import curdoc, figure
 from bokeh.themes import built_in_themes  
+from bokeh.models import Div
 
 import arlpy.uwapm as pm
 import arlpy.plot as plt
 import json
 import numpy as np
 import ast
+
+import datetime
+import os
 
 class BellhopSimulation:
     """Class to handle Bellhop underwater acoustic simulations."""
@@ -97,7 +101,11 @@ class BellhopSimulation:
         """
         env_params = {}
         for key, val in self.params.items():
-            if val == 'None' or val is None:
+            # if val == 'None' or val is None:
+            #     env_params[key] = None
+            if isinstance(val, str) and val.strip() == 'None':
+                env_params[key] = None
+            elif val is None:
                 env_params[key] = None
             elif key in ['depth', 'soundspeed']:
                 try:
@@ -112,7 +120,8 @@ class BellhopSimulation:
                 except json.JSONDecodeError:
                     self.add_to_command_output(f"Invalid JSON format for {key}.")
                     return None, None, None, None, None, None
-            elif key not in ['name', 'depth_interp', 'soundspeed_interp', 'surface_interp', 'tx_directionality', 'type']:
+            # elif key not in ['name', 'depth_interp', 'soundspeed_interp', 'surface_interp', 'tx_directionality', 'type']:
+            elif key not in ['name', 'depth_interp', 'soundspeed_interp', 'surface_interp', 'tx_directionality', 'type', 'surface']:
                 try:
                     env_params[key] = float(val)
                 except ValueError:
@@ -329,26 +338,56 @@ theme_select.on_change('value', switch_theme)
 
 reset_button = Button(label="Reset to Default", button_type="success")
 
-
 reset_button.on_click(reset_params)
+
+
+def default_converter(o):
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    raise TypeError(f"Object of type {type(o)} is not JSON serializable")
+
 
 # Additional Widgets
 export_button = Button(label="Export Results", button_type="primary")
+# def export_results():
+#     # Implement export functionality
+#     bellhop.add_to_command_output("Results exported.")
+
 def export_results():
-    # Implement export functionality
-    bellhop.add_to_command_output("Results exported.")
+    try:
+        export_data = bellhop.params  # Export current simulation params
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"bellhop_export_{timestamp}.json"
+        filepath = os.path.join(os.getcwd(), filename)
+
+        with open(filepath, 'w') as f:
+            # json.dump(export_data, f, indent=4)
+            json.dump(export_data, f, indent=4, default=default_converter)
+
+
+        bellhop.add_to_command_output(f"Exported parameters to {filename}")
+    except Exception as e:
+        bellhop.add_to_command_output(f"Export failed: {e}")
+
 export_button.on_click(export_results)
 
-presets_select = Select(title='Presets', options=['Preset 1', 'Preset 2', 'Preset 3'], value='Preset 1')
+presets_select = Select(title='Presets', options=['Preset 1', 'Preset 2', 'Preset 3', 'Preset 4'], value='Preset 1')
 def load_preset(attr, old, new):
     preset_values = {
         'Preset 1': {'bottom_absorption': 0.1, 'bottom_density': 1600, 'bottom_soundspeed': 1600},
         'Preset 2': {'bottom_absorption': 0.2, 'bottom_density': 1700, 'bottom_soundspeed': 1650},
-        'Preset 3': {'bottom_absorption': 0.3, 'bottom_density': 1800, 'bottom_soundspeed': 1700}
+        'Preset 3': {'bottom_absorption': 0.3, 'bottom_density': 1800, 'bottom_soundspeed': 1700},
+        'Preset 4': {
+        'name': 'eced-6575',
+        'depth': json.dumps([[0, 30], [300, 20], [1000, 25]]),
+        'soundspeed': json.dumps([[0, 1540], [10, 1530], [20, 1532], [25, 1533], [30, 1535]]),
+        'surface': "np.array([[r, 0.5+0.5*np.sin(2*np.pi*0.005*r)] for r in np.linspace(0,1000,1001)])"
+    }
     }
     for key, value in preset_values[new].items():
-        bellhop.widgets[key].value = str(value)
-    bellhop.add_to_command_output(f"Preset {new} loaded.")
+        # bellhop.widgets[key].value = str(value)
+        bellhop.widgets[key].value = value if isinstance(value, str) else str(value)
+    bellhop.add_to_command_output(f"{new} loaded.")
 presets_select.on_change('value', load_preset)
 
 # Create the initial plots
@@ -365,8 +404,28 @@ if u is None: u = figure(title="Error plotting transmission loss", width=600, he
 # Create the layout
 control_widgets = [widget for widget in bellhop.widgets.values()]
 controls = column(*control_widgets, width=250)
-extra_controls = column(presets_select, export_button, theme_select, reset_button)
-layout = row(controls, column(p, q, r), column(t, s, u), column(bellhop.command_output), column(extra_controls))
+# extra_controls = column(presets_select, export_button, theme_select, reset_button)
+# layout = row(controls, column(p, q, r), column(t, s, u), column(bellhop.command_output), column(extra_controls))
+
+separator = Div(text="<hr>", width=250)
+
+# Move extra controls below the command output
+command_column = column(
+    presets_select,
+    export_button,
+    theme_select,
+    reset_button,
+    separator,
+    bellhop.command_output,
+    width=250
+)
+
+layout = row(
+    controls,
+    column(p, q, r),
+    column(t, s, u),
+    command_column
+)
 
 # Add the layout to the current document
 
