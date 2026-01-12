@@ -1,4 +1,4 @@
-bokeh==3.6.0
+bokeh==3.8.2
 arlpy==1.9.1
 numpy==1.26.4
 matplotlib==3.10.3
